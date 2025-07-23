@@ -1,352 +1,422 @@
-# DB Migrator - 智能数据库迁移工具
+# 数据库迁移工具 (DB Migrator)
 
-一个功能强大、智能化的Go数据库迁移工具，支持MySQL/MariaDB，提供智能存在性检查、多数据库管理和丰富的构建器API。
+一个智能的Go语言数据库迁移工具，支持MySQL/MariaDB数据库的版本控制、多数据库操作、数据初始化和跨数据库数据复制。
 
-## 🚀 功能特性
+## ✨ 主要特性
 
-- ✅ **多数据库支持** - MySQL、MariaDB，同一服务器多数据库实例
-- ✅ **智能迁移** - 自动检查表/列/索引存在性
-- ✅ **Go代码定义** - 使用Go结构体定义迁移，而非SQL文件
-- ✅ **链式API** - 流畅的表定义和数据操作API
-- ✅ **事务支持** - 确保迁移原子性
-- ✅ **并发控制** - 防止同时执行迁移
-- ✅ **CLI工具** - 完整的命令行界面 
-- ✅ **配置灵活** - YAML配置文件 + 环境变量
-- ✅ **模式匹配** - 支持 `shop_*` 等通配符模式
-- 🆕 **数据初始化** - 支持JSON/YAML/数据库源的数据初始化
-- 🆕 **跨数据库复制** - 智能数据复制，支持字段映射和数据转换
-- 🆕 **进度显示** - 实时显示数据操作进度和错误处理
+### 🔧 智能迁移系统
+- **智能存在性检查** - 自动检测表、列、索引、函数、触发器等数据库对象是否存在
+- **自动跳过已存在对象** - 避免重复创建，提高迁移的健壮性
+- **事务安全** - 支持事务级别的迁移执行，确保数据一致性
+- **版本控制** - 完整的迁移历史记录和版本管理
+- **回滚支持** - 支持安全的数据库迁移回滚
+
+### 🌐 多数据库支持
+- **批量操作** - 同时对多个数据库执行迁移
+- **模式匹配** - 支持通配符匹配数据库名称（如 `shop_*`）
+- **灵活配置** - 支持目录结构和代码指定两种迁移组织方式
+- **并发控制** - 支持多数据库的并发迁移和锁机制
+
+### 📊 数据操作功能
+- **数据初始化** - 支持从JSON、YAML文件或其他数据库初始化数据
+- **跨数据库复制** - 支持在不同数据库间复制数据
+- **多种策略** - 支持覆盖、合并、插入、忽略等多种数据处理策略
+- **进度监控** - 实时显示数据操作进度和错误处理
+
+### 🆕 **SQL文件导入功能** (新增)
+- **从SQL文件创建数据库** - 支持完整的DDL语句解析和执行
+- **智能解析** - 支持表、视图、存储过程、触发器、索引等多种数据库对象
+- **依赖关系处理** - 自动分析和排序SQL语句的执行顺序
+- **注释处理** - 正确处理SQL文件中的单行和多行注释
+- **字符集配置** - 支持指定数据库字符集和排序规则
 
 ## 🚀 快速开始
 
 ### 安装
 
 ```bash
-go install github.com/xiezhihuan/db-migrator
+# 克隆项目
+git clone <repository-url>
+cd db-migrator
+
+# 安装依赖
+go mod download
+
+# 构建
+go build -o db-migrator
 ```
 
-### 初始化项目
+### 初始化
 
 ```bash
-# 创建配置文件和迁移目录
-db-migrator init
+# 初始化项目
+./db-migrator init
+
+# 编辑配置文件
+vim config.yaml
 ```
 
-### 配置数据库
+### 基本配置
 
 ```yaml
-# config.yaml - 单数据库配置（向后兼容）
 database:
   driver: mysql
   host: localhost
   port: 3306
   username: root
-  password: secret
-  database: myapp_db
+  password: your_password
+  database: your_database
   charset: utf8mb4
-
-# 多数据库配置（可选）
-databases:
-  main:
-    driver: mysql
-    host: localhost
-    port: 3306
-    username: root
-    password: secret
-    database: app_main_db
-    charset: utf8mb4
-  
-  users:
-    driver: mysql
-    host: localhost
-    port: 3306
-    username: root
-    password: secret
-    database: app_users_db
-    charset: utf8mb4
 
 migrator:
   migrations_table: schema_migrations
   lock_table: schema_migrations_lock
   auto_backup: false
   dry_run: false
-  default_database: main
   migrations_dir: migrations
+```
+
+## 📖 使用指南
+
+### 基础迁移操作
+
+```bash
+# 创建迁移文件
+./db-migrator create add_users_table
+
+# 执行迁移
+./db-migrator up
+
+# 查看状态
+./db-migrator status
+
+# 回滚迁移
+./db-migrator down --steps=1
+```
+
+### **🆕 从SQL文件创建数据库**
+
+这是新增的强大功能，可以从完整的SQL文件创建数据库和所有对象：
+
+```bash
+# 基本用法 - 从SQL文件创建数据库
+./db-migrator create-db --name "my_new_shop" --from-sql "schema.sql"
+
+# 指定字符集和排序规则
+./db-migrator create-db \
+  --name "my_shop" \
+  --from-sql "schema.sql" \
+  --charset utf8mb4 \
+  --collation utf8mb4_unicode_ci
+
+# 如果数据库已存在则跳过
+./db-migrator create-db \
+  --name "my_shop" \
+  --from-sql "schema.sql" \
+  --if-exists skip
+
+# 处理复杂的SQL文件（包含存储过程、触发器等）
+./db-migrator create-db \
+  --name "complex_db" \
+  --from-sql "examples/sql_schema/sample_shop.sql"
+```
+
+#### SQL文件支持的对象类型
+
+- ✅ **表 (CREATE TABLE)** - 包括外键约束和依赖关系
+- ✅ **视图 (CREATE VIEW)** - 自动处理表依赖关系
+- ✅ **存储过程 (CREATE PROCEDURE)** - 支持复杂的存储过程定义
+- ✅ **函数 (CREATE FUNCTION)** - 支持用户定义函数
+- ✅ **触发器 (CREATE TRIGGER)** - 自动处理表依赖关系
+- ✅ **索引 (CREATE INDEX)** - 包括唯一索引和复合索引
+- ✅ **注释处理** - 正确处理 `--` 和 `/* */` 注释
+- ✅ **分隔符处理** - 支持 `DELIMITER` 语句
+
+#### 智能特性
+
+1. **依赖关系自动排序** - 自动分析表间的外键依赖，按正确顺序创建
+2. **存在性检查** - 创建前检查数据库是否已存在
+3. **事务安全** - 所有DDL操作在事务中执行，失败时自动回滚
+4. **详细报告** - 显示创建的对象统计和执行时间
+
+### 多数据库操作
+
+```bash
+# 操作单个数据库
+./db-migrator up --database main_db
+
+# 操作多个数据库
+./db-migrator up --databases main_db,log_db,user_db
+
+# 使用模式匹配
+./db-migrator up --patterns shop_*
+
+# 操作所有数据库
+./db-migrator up --all
+```
+
+### 数据初始化
+
+```bash
+# 从模板数据库初始化新租户
+./db-migrator init-data \
+  --database tenant_new_001 \
+  --from-db tenant_template
+
+# 从JSON文件初始化数据
+./db-migrator init-data \
+  --patterns shop_* \
+  --data-file shop-init-data.json
+
+# 为微服务初始化配置数据
+./db-migrator init-data \
+  --patterns *_service \
+  --data-type system_configs
+```
+
+### 跨数据库数据复制
+
+```bash
+# 从总部复制商品数据到所有店铺
+./db-migrator copy-data \
+  --source headquarters \
+  --patterns shop_* \
+  --tables products,categories
+
+# 复制指定条件的数据
+./db-migrator copy-data \
+  --source main_db \
+  --target backup_db \
+  --tables orders \
+  --conditions "orders:status='completed'"
+
+# 使用配置文件复制
+./db-migrator copy-data --config copy-config.json
+```
+
+## 🗂️ 项目结构
+
+```
+db-migrator/
+├── cmd/                    # CLI命令实现
+│   ├── root.go            # 根命令和全局配置
+│   ├── create_db.go       # 🆕 SQL文件导入命令
+│   └── data.go            # 数据操作命令
+├── internal/
+│   ├── types/             # 类型定义
+│   │   ├── migration.go   # 迁移相关类型
+│   │   └── database.go    # 🆕 数据库创建相关类型
+│   ├── database/          # 数据库操作
+│   │   ├── manager.go     # 多数据库管理器
+│   │   └── creator.go     # 🆕 数据库创建器
+│   ├── sqlparser/         # 🆕 SQL解析器
+│   │   └── parser.go      # SQL文件解析实现
+│   ├── migrator/          # 迁移器实现
+│   ├── builder/           # SQL构建器
+│   └── checker/           # 存在性检查器
+├── examples/
+│   ├── sql_schema/        # 🆕 SQL示例文件
+│   │   └── sample_shop.sql # 完整的商店数据库结构
+│   ├── use_cases/         # 使用场景示例
+│   └── data_operations/   # 数据操作示例
+├── migrations/            # 迁移文件目录
+├── config.yaml           # 配置文件
+└── README.md
+```
+
+## 📝 示例SQL文件
+
+项目包含了一个完整的示例SQL文件 `examples/sql_schema/sample_shop.sql`，展示了支持的所有对象类型：
+
+```sql
+-- 表结构
+CREATE TABLE `users` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `username` varchar(50) NOT NULL,
+    -- ... 更多字段
+    FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
+);
+
+-- 视图
+CREATE VIEW `product_sales_stats` AS
+SELECT p.`id`, p.`name`, SUM(oi.`quantity`) AS `total_sold`
+FROM `products` p
+LEFT JOIN `order_items` oi ON p.`id` = oi.`product_id`;
+
+-- 存储过程
+DELIMITER $$
+CREATE PROCEDURE `GetUserCartTotal`(IN p_user_id BIGINT)
+BEGIN
+    SELECT COUNT(*) AS item_count FROM cart_items WHERE user_id = p_user_id;
+END$$
+DELIMITER ;
+
+-- 触发器
+CREATE TRIGGER `trg_order_item_stock_decrease` 
+AFTER INSERT ON `order_items`
+FOR EACH ROW
+BEGIN
+    UPDATE `products` SET `stock` = `stock` - NEW.`quantity`;
+END;
+```
+
+## 🔧 高级配置
+
+### 多数据库配置
+
+```yaml
+databases:
+  # 主数据库
+  main:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: password
+    database: main_db
+    charset: utf8mb4
+
+  # SaaS多租户配置
+  tenant_template:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: password
+    database: tenant_template
+    charset: utf8mb4
+
+migrator:
+  # 多数据库设置
   database_patterns:
-    - "app_*"
     - "shop_*"
+    - "tenant_*"
+    - "*_service"
+  
+  # 迁移组织方式
+  organization_style: "directory" # or "code"
 ```
 
-### 创建迁移
+## 📊 命令参考
+
+### create-db 命令
 
 ```bash
-# 为默认数据库创建迁移
-db-migrator create create_users_table
+db-migrator create-db [flags]
 
-# 为指定数据库创建迁移
-db-migrator create create_orders_table -d orders
+Flags:
+  --name string         数据库名称 (必填)
+  --from-sql string     SQL文件路径 (必填)
+  --charset string      数据库字符集 (默认: utf8mb4)
+  --collation string    数据库排序规则 (默认: utf8mb4_unicode_ci)
+  --if-exists string    数据库已存在时的处理方式: error, skip, prompt (默认: error)
+
+Examples:
+  # 从SQL文件创建数据库
+  db-migrator create-db --name "my_new_shop" --from-sql "schema.sql"
+  
+  # 指定字符集和排序规则
+  db-migrator create-db --name "my_shop" --from-sql "schema.sql" --charset utf8mb4 --collation utf8mb4_unicode_ci
+  
+  # 如果数据库已存在则跳过
+  db-migrator create-db --name "my_shop" --from-sql "schema.sql" --if-exists skip
 ```
 
-### 执行迁移
+### 通用数据库选择参数
+
+所有多数据库命令都支持以下参数：
 
 ```bash
-# 单数据库迁移
-db-migrator up                    # 默认数据库
-db-migrator up -d main           # 指定数据库
-
-# 多数据库迁移
-db-migrator up --databases=main,users    # 多个数据库
-db-migrator up --patterns=shop*          # 模式匹配
-db-migrator up --all                     # 所有数据库
+  -d, --database string     指定目标数据库
+      --databases strings   指定多个目标数据库（逗号分隔）
+      --patterns strings    数据库名匹配模式（支持通配符）
+      --all                 操作所有配置的数据库
 ```
 
-## 📝 迁移文件示例
+## 🛠️ 开发指南
 
-### 基础迁移
+### 迁移文件示例
 
 ```go
-package main
+package migrations
 
 import (
     "context"
     "db-migrator/internal/builder"
-    "db-migrator/internal/checker"
     "db-migrator/internal/types"
 )
 
-type CreateUsersTableMigration struct{}
+type AddUsersTableMigration struct{}
 
-func (m *CreateUsersTableMigration) Version() string {
-    return "001"
+func (m *AddUsersTableMigration) Version() string {
+    return "1703123456"
 }
 
-func (m *CreateUsersTableMigration) Description() string {
-    return "创建用户表"
+func (m *AddUsersTableMigration) Description() string {
+    return "添加用户表"
 }
 
-func (m *CreateUsersTableMigration) Up(ctx context.Context, db types.DB) error {
-    checker := checker.NewMySQLChecker(db, "myapp_db")
-    builder := builder.NewAdvancedBuilder(checker, db)
-
-    return builder.Table("users").
-        ID().
-        String("email", 255).NotNull().Unique().Comment("邮箱").End().
-        String("password_hash", 255).NotNull().Comment("密码哈希").End().
-        String("name", 100).NotNull().Comment("姓名").End().
-        Enum("status", []string{"active", "inactive"}).Default("active").End().
-        Json("profile").Nullable().Comment("用户档案").End().
-        Timestamps().
-        Index("email").End().
-        Engine("InnoDB").
-        Comment("用户表").
+func (m *AddUsersTableMigration) Up(ctx context.Context, db types.DB) error {
+    builder := builder.NewAdvancedBuilder(nil, db)
+    
+    return builder.CreateTable("users").
+        AddColumn("id", "INT PRIMARY KEY AUTO_INCREMENT").
+        AddColumn("username", "VARCHAR(50) NOT NULL UNIQUE").
+        AddColumn("email", "VARCHAR(100) NOT NULL UNIQUE").
+        AddColumn("created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP").
         Create(ctx)
 }
 
-func (m *CreateUsersTableMigration) Down(ctx context.Context, db types.DB) error {
-    _, err := db.Exec("DROP TABLE IF EXISTS users")
+func (m *AddUsersTableMigration) Down(ctx context.Context, db types.DB) error {
+    _, err := db.ExecContext(ctx, "DROP TABLE IF EXISTS users")
     return err
 }
 ```
 
-### 多数据库迁移
+## 🔍 故障排除
 
-```go
-package shared
+### 常见问题
 
-// 创建设置表（应用到多个数据库）
-type CreateSettingsTableMigration struct{}
+1. **数据库连接失败**
+   ```bash
+   # 检查配置文件
+   cat config.yaml
+   
+   # 测试连接
+   mysql -h localhost -u root -p
+   ```
 
-func (m *CreateSettingsTableMigration) Version() string {
-    return "001"
-}
+2. **SQL解析错误**
+   ```bash
+   # 检查SQL文件格式
+   # 确保使用正确的字符编码 (UTF-8)
+   # 检查分隔符和注释格式
+   ```
 
-func (m *CreateSettingsTableMigration) Description() string {
-    return "创建系统设置表（多数据库共享）"
-}
+3. **依赖关系错误**
+   ```bash
+   # 检查外键引用的表是否存在
+   # 确保表创建顺序正确
+   ```
 
-// 实现MultiDatabaseMigration接口
-func (m *CreateSettingsTableMigration) Database() string {
-    return "" // 空字符串表示不指定单个数据库
-}
-
-func (m *CreateSettingsTableMigration) Databases() []string {
-    return []string{"main", "users", "orders"} // 应用到多个数据库
-}
-
-func (m *CreateSettingsTableMigration) Up(ctx context.Context, db types.DB) error {
-    checker := checker.NewMySQLChecker(db, "")
-    builder := builder.NewAdvancedBuilder(checker, db)
-
-    return builder.Table("system_settings").
-        ID().
-        String("key", 100).NotNull().Unique().Comment("设置键").End().
-        Text("value").Nullable().Comment("设置值").End().
-        String("category", 50).Default("general").Comment("分类").End().
-        Timestamps().
-        Engine("InnoDB").
-        Comment("系统设置表").
-        Create(ctx)
-}
-
-func (m *CreateSettingsTableMigration) Down(ctx context.Context, db types.DB) error {
-    _, err := db.Exec("DROP TABLE IF EXISTS system_settings")
-    return err
-}
-```
-
-## 🎯 使用场景
-
-### 微服务架构
-```bash
-# 为各个微服务数据库分别迁移
-db-migrator up -d user_service
-db-migrator up -d order_service
-db-migrator up -d product_service
-
-# 或批量迁移所有微服务数据库
-db-migrator up --patterns=microservice_*
-```
-
-### 多租户系统
-```bash
-# 为所有租户数据库应用相同的迁移
-db-migrator up --patterns=tenant_*
-
-# 查看所有租户数据库状态
-db-migrator status --patterns=tenant_*
-```
-
-### 多环境部署
-```bash
-# 开发环境
-db-migrator up --patterns=dev_*
-
-# 测试环境  
-db-migrator up --patterns=test_*
-
-# 生产环境
-db-migrator up --patterns=prod_*
-```
-
-## 📚 文档
-
-- [**多数据库功能指南**](MULTI_DATABASE_GUIDE.md) - 详细的多数据库使用说明
-- [**高级功能文档**](ADVANCED_FEATURES.md) - 高级构建器API和功能
-- [**使用场景示例**](examples/usage_scenarios.md) - 各种实际使用场景
-
-## 🎯 具体使用案例
-
-根据你的项目类型，选择合适的案例快速上手：
-
-| 项目类型 | 案例文档 | 匹配模式 | 适用场景 |
-|---------|---------|---------|---------|
-| 🛒 **连锁商店** | [多店铺系统](examples/use_cases/01_multi_shop_system/) | `shop_*` | 连锁店、加盟店、多分店管理 |
-| 🏢 **SaaS平台** | [多租户系统](examples/use_cases/03_saas_multi_tenant/) | `tenant_*` | SaaS产品、多客户独立数据库 |
-| 🔧 **微服务** | [微服务架构](examples/use_cases/06_microservices/) | `*_service` | 微服务、服务拆分、独立部署 |
-| ⚡ **快速参考** | [快速参考指南](examples/use_cases/QUICK_REFERENCE.md) | - | 命令速查、故障排除、最佳实践 |
-
-### 快速命令示例
+### 日志级别
 
 ```bash
-# 连锁店管理 - 为所有店铺执行迁移
-db-migrator up --patterns=shop*
+# 详细输出
+./db-migrator create-db --name test --from-sql schema.sql --verbose
 
-# SaaS多租户 - 为所有租户添加新功能  
-db-migrator up --patterns=tenant_*
-
-# 微服务架构 - 部署所有服务数据库
-db-migrator up --patterns=*_service
-
-# 多环境部署 - 生产环境发布
-db-migrator up --patterns=*_prod
+# 调试模式
+DB_MIGRATOR_DEBUG=true ./db-migrator create-db --name test --from-sql schema.sql
 ```
-
-## 🔧 高级功能
-
-- **外键关系**：自动处理外键约束和级联操作
-- **复杂索引**：支持复合索引、唯一索引、全文索引
-- **存储过程/函数**：创建和管理数据库函数
-- **视图管理**：创建和更新数据库视图
-- **触发器支持**：数据变更触发器
-- **数据迁移助手**：批量数据处理和ID映射
-
-## 🛡️ 安全特性
-
-- **事务回滚**：失败时自动回滚
-- **并发锁**：防止同时迁移冲突
-- **存在性检查**：避免重复操作
-- **错误处理**：详细的错误信息和堆栈跟踪
-
-## 📊 数据操作功能 🆕
-
-### 数据初始化
-为新数据库快速初始化基础数据：
-
-```bash
-# 从模板数据库初始化
-db-migrator init-data -d new_tenant --from-db=template_db
-
-# 从JSON文件初始化
-db-migrator init-data --patterns=shop_* --data-file=base-data.json
-
-# 批量初始化多个数据库
-db-migrator init-data --patterns=tenant_* --data-type=system_configs
-```
-
-### 跨数据库数据复制
-在数据库之间复制数据，支持多种策略：
-
-```bash
-# 从总部复制商品到所有店铺
-db-migrator copy-data --source=headquarters --patterns=shop_* --tables=products,categories
-
-# 智能合并数据
-db-migrator copy-data --source=source_db --target=target_db --strategy=merge --tables=orders
-
-# 条件复制
-db-migrator copy-data --source=main --target=archive --conditions="orders:created_at<'2023-01-01'"
-```
-
-### 支持的数据源
-- **数据库复制** - 从其他数据库复制结构化数据
-- **JSON文件** - 从JSON文件导入数据  
-- **YAML文件** - 从YAML文件导入数据
-- **Go结构体** - 直接在迁移代码中定义数据
-- **内置数据** - 预定义的系统基础数据
-
-### 复制策略
-- **overwrite** - 完全覆盖（清空后插入）
-- **merge** - 智能合并（插入或更新）
-- **insert** - 仅插入新数据
-- **ignore** - 忽略重复数据
-
-### 进度监控
-所有数据操作都支持实时进度显示和错误处理：
-- ⏳ 实时进度百分比
-- 📊 处理行数统计  
-- ❌ 详细错误信息
-- 🔄 事务保护
-- ⏱️ 超时控制
-
-## 具体使用案例
-
-| 场景 | 案例 | 描述 |
-|------|------|------|
-| 多店铺系统 | [总部到分店数据复制](examples/data_operations/01_headquarters_to_shops/) | 从总部同步商品目录到各店铺 |
-| SaaS平台 | [新租户数据初始化](examples/data_operations/05_new_tenant/) | 为新租户快速初始化基础数据 |
-| 微服务架构 | [跨服务数据共享](examples/data_operations/04_cross_service/) | 在微服务间共享基础配置数据 |
-| 开发测试 | [测试环境准备](examples/data_operations/08_dev_environment/) | 快速准备开发测试数据 |
-
-👉 **查看完整案例**: [数据操作案例大全](examples/data_operations/)
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
 
 ## 📄 许可证
 
 MIT License
 
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
 ---
 
-**DB Migrator** - 让数据库迁移变得简单、安全、高效！ 🚀 
+**🌟 新功能亮点：`create-db` 命令让您可以轻松地从现有的SQL文件快速创建完整的数据库结构！** 

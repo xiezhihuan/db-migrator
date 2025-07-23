@@ -278,10 +278,6 @@ var downCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	downCmd.Flags().IntP("steps", "s", 1, "回滚步数")
-}
-
 // statusCmd 查看状态命令
 var statusCmd = &cobra.Command{
 	Use:   "status",
