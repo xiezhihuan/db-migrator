@@ -1,0 +1,417 @@
+# DB Migrator 多数据库配置示例汇总
+# 根据你的业务场景选择合适的配置模板
+
+# =============================================================================
+# 场景1: 连锁商店系统 (shop_*)
+# =============================================================================
+shop_system_config: &shop_config
+  database:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: shop_admin
+    password: ${SHOP_DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 总部数据库
+    headquarters:
+      driver: mysql
+      host: localhost
+      port: 3306
+      username: shop_admin
+      password: ${SHOP_DB_PASSWORD}
+      database: headquarters_db
+      charset: utf8mb4
+      
+    # 各店铺数据库
+    shop_001:
+      driver: mysql
+      host: localhost
+      port: 3306
+      username: shop_admin
+      password: ${SHOP_DB_PASSWORD}
+      database: shop_001_db  # 北京旗舰店
+      charset: utf8mb4
+      
+    shop_002:
+      driver: mysql
+      host: localhost
+      port: 3306
+      username: shop_admin
+      password: ${SHOP_DB_PASSWORD}
+      database: shop_002_db  # 上海分店
+      charset: utf8mb4
+      
+    shop_003:
+      driver: mysql
+      host: localhost
+      port: 3306
+      username: shop_admin
+      password: ${SHOP_DB_PASSWORD}
+      database: shop_003_db  # 广州分店
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: false
+    dry_run: false
+    default_database: headquarters
+    migrations_dir: migrations
+    database_patterns:
+      - "shop_*"           # 匹配所有店铺数据库
+      - "shop_new_*"       # 匹配新店铺数据库
+
+# =============================================================================
+# 场景2: SaaS多租户系统 (tenant_*)
+# =============================================================================
+saas_tenant_config: &saas_config
+  database:
+    driver: mysql
+    host: saas-db.company.com
+    port: 3306
+    username: saas_admin
+    password: ${SAAS_DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 平台管理数据库
+    platform:
+      driver: mysql
+      host: saas-db.company.com
+      port: 3306
+      username: saas_admin
+      password: ${SAAS_DB_PASSWORD}
+      database: platform_db
+      charset: utf8mb4
+      
+    # 企业版租户
+    tenant_001:
+      driver: mysql
+      host: saas-db.company.com
+      port: 3306
+      username: saas_admin
+      password: ${SAAS_DB_PASSWORD}
+      database: tenant_001_db  # ABC科技公司
+      charset: utf8mb4
+      
+    tenant_002:
+      driver: mysql
+      host: saas-db.company.com
+      port: 3306
+      username: saas_admin
+      password: ${SAAS_DB_PASSWORD}
+      database: tenant_002_db  # XYZ工作室
+      charset: utf8mb4
+      
+    # 试用租户
+    tenant_trial_001:
+      driver: mysql
+      host: saas-db.company.com
+      port: 3306
+      username: saas_admin
+      password: ${SAAS_DB_PASSWORD}
+      database: tenant_trial_001_db
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: true  # SaaS系统建议开启备份
+    dry_run: false
+    default_database: platform
+    migrations_dir: migrations
+    database_patterns:
+      - "tenant_*"        # 所有租户数据库
+      - "tenant_trial_*"  # 试用租户
+      - "tenant_new_*"    # 新注册租户
+
+# =============================================================================
+# 场景3: 微服务架构 (*_service)
+# =============================================================================
+microservices_config: &microservices_config
+  database:
+    driver: mysql
+    host: microservices-db.internal
+    port: 3306
+    username: microservice_admin
+    password: ${MICROSERVICE_DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 各微服务数据库
+    user_service:
+      driver: mysql
+      host: microservices-db.internal
+      port: 3306
+      username: microservice_admin
+      password: ${MICROSERVICE_DB_PASSWORD}
+      database: user_service_db
+      charset: utf8mb4
+      
+    product_service:
+      driver: mysql
+      host: microservices-db.internal
+      port: 3306
+      username: microservice_admin
+      password: ${MICROSERVICE_DB_PASSWORD}
+      database: product_service_db
+      charset: utf8mb4
+      
+    order_service:
+      driver: mysql
+      host: microservices-db.internal
+      port: 3306
+      username: microservice_admin
+      password: ${MICROSERVICE_DB_PASSWORD}
+      database: order_service_db
+      charset: utf8mb4
+      
+    message_service:
+      driver: mysql
+      host: microservices-db.internal
+      port: 3306
+      username: microservice_admin
+      password: ${MICROSERVICE_DB_PASSWORD}
+      database: message_service_db
+      charset: utf8mb4
+      
+    shared_service:
+      driver: mysql
+      host: microservices-db.internal
+      port: 3306
+      username: microservice_admin
+      password: ${MICROSERVICE_DB_PASSWORD}
+      database: shared_service_db
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: true
+    dry_run: false
+    default_database: shared_service
+    migrations_dir: migrations
+    database_patterns:
+      - "*_service"      # 所有服务数据库
+      - "user_*"         # 用户相关服务
+      - "order_*"        # 订单相关服务
+
+# =============================================================================
+# 场景4: 多环境部署 (*_env)
+# =============================================================================
+multi_environment_config: &env_config
+  database:
+    driver: mysql
+    host: ${DB_HOST}
+    port: 3306
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 生产环境
+    main_prod:
+      driver: mysql
+      host: ${PROD_DB_HOST}
+      port: 3306
+      username: ${PROD_DB_USER}
+      password: ${PROD_DB_PASSWORD}
+      database: main_prod_db
+      charset: utf8mb4
+      
+    users_prod:
+      driver: mysql
+      host: ${PROD_DB_HOST}
+      port: 3306
+      username: ${PROD_DB_USER}
+      password: ${PROD_DB_PASSWORD}
+      database: users_prod_db
+      charset: utf8mb4
+      
+    # 测试环境
+    main_test:
+      driver: mysql
+      host: ${TEST_DB_HOST}
+      port: 3306
+      username: ${TEST_DB_USER}
+      password: ${TEST_DB_PASSWORD}
+      database: main_test_db
+      charset: utf8mb4
+      
+    users_test:
+      driver: mysql
+      host: ${TEST_DB_HOST}
+      port: 3306
+      username: ${TEST_DB_USER}
+      password: ${TEST_DB_PASSWORD}
+      database: users_test_db
+      charset: utf8mb4
+      
+    # 开发环境
+    main_dev:
+      driver: mysql
+      host: localhost
+      port: 3306
+      username: dev_user
+      password: dev_password
+      database: main_dev_db
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: true
+    dry_run: false
+    default_database: main_dev
+    migrations_dir: migrations
+    database_patterns:
+      - "*_prod"         # 生产环境
+      - "*_test"         # 测试环境
+      - "*_dev"          # 开发环境
+
+# =============================================================================
+# 场景5: 企业多分公司 (branch_*)
+# =============================================================================
+enterprise_branches_config: &enterprise_config
+  database:
+    driver: mysql
+    host: enterprise-db.company.internal
+    port: 3306
+    username: enterprise_admin
+    password: ${ENTERPRISE_DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 总部数据库
+    headquarters:
+      driver: mysql
+      host: enterprise-db.company.internal
+      port: 3306
+      username: enterprise_admin
+      password: ${ENTERPRISE_DB_PASSWORD}
+      database: headquarters_db
+      charset: utf8mb4
+      
+    # 各分公司数据库
+    branch_beijing:
+      driver: mysql
+      host: enterprise-db.company.internal
+      port: 3306
+      username: enterprise_admin
+      password: ${ENTERPRISE_DB_PASSWORD}
+      database: branch_beijing_db
+      charset: utf8mb4
+      
+    branch_shanghai:
+      driver: mysql
+      host: enterprise-db.company.internal
+      port: 3306
+      username: enterprise_admin
+      password: ${ENTERPRISE_DB_PASSWORD}
+      database: branch_shanghai_db
+      charset: utf8mb4
+      
+    branch_guangzhou:
+      driver: mysql
+      host: enterprise-db.company.internal
+      port: 3306
+      username: enterprise_admin
+      password: ${ENTERPRISE_DB_PASSWORD}
+      database: branch_guangzhou_db
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: true
+    dry_run: false
+    default_database: headquarters
+    migrations_dir: migrations
+    database_patterns:
+      - "branch_*"       # 所有分公司数据库
+      - "region_*"       # 按地区分组
+
+# =============================================================================
+# 场景6: 游戏多服务器 (server_*)
+# =============================================================================
+game_servers_config: &game_config
+  database:
+    driver: mysql
+    host: game-db.company.com
+    port: 3306
+    username: game_admin
+    password: ${GAME_DB_PASSWORD}
+    charset: utf8mb4
+
+  databases:
+    # 全局数据库
+    global_data:
+      driver: mysql
+      host: game-db.company.com
+      port: 3306
+      username: game_admin
+      password: ${GAME_DB_PASSWORD}
+      database: global_data_db
+      charset: utf8mb4
+      
+    # 各游戏服务器
+    server_s1:
+      driver: mysql
+      host: game-db.company.com
+      port: 3306
+      username: game_admin
+      password: ${GAME_DB_PASSWORD}
+      database: server_s1_db  # 服务器1
+      charset: utf8mb4
+      
+    server_s2:
+      driver: mysql
+      host: game-db.company.com
+      port: 3306
+      username: game_admin
+      password: ${GAME_DB_PASSWORD}
+      database: server_s2_db  # 服务器2
+      charset: utf8mb4
+
+  migrator:
+    migrations_table: schema_migrations
+    lock_table: schema_migrations_lock
+    auto_backup: true
+    dry_run: false
+    default_database: global_data
+    migrations_dir: migrations
+    database_patterns:
+      - "server_*"       # 所有游戏服务器
+      - "server_s*"      # S区服务器
+      - "server_new_*"   # 新开服务器
+
+# =============================================================================
+# 使用说明：
+# 
+# 1. 复制对应场景的配置到你的 config.yaml 文件
+# 2. 根据实际情况修改数据库连接信息
+# 3. 设置相应的环境变量
+# 4. 运行迁移命令
+# 
+# 示例命令：
+# 
+# 连锁店系统：
+#   db-migrator up --patterns=shop*
+# 
+# SaaS多租户：
+#   db-migrator up --patterns=tenant_*
+# 
+# 微服务架构：
+#   db-migrator up --patterns=*_service
+# 
+# 多环境部署：
+#   db-migrator up --patterns=*_prod
+# 
+# 企业分公司：
+#   db-migrator up --patterns=branch_*
+# 
+# 游戏服务器：
+#   db-migrator up --patterns=server_*
+# ============================================================================= 

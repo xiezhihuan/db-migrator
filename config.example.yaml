@@ -1,0 +1,101 @@
+# DB Migrator 多数据库配置示例
+
+# 默认数据库配置（向后兼容）
+database:
+  driver: mysql
+  host: localhost
+  port: 3306
+  username: root
+  password: secret
+  database: default_db
+  charset: utf8mb4
+
+# 多数据库配置（可选）
+databases:
+  # 主应用数据库
+  main:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: secret
+    database: app_main_db
+    charset: utf8mb4
+  
+  # 用户服务数据库  
+  users:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: secret
+    database: app_users_db
+    charset: utf8mb4
+    
+  # 订单服务数据库
+  orders:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: secret
+    database: app_orders_db
+    charset: utf8mb4
+    
+  # 日志数据库
+  logs:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: secret
+    database: app_logs_db
+    charset: utf8mb4
+    
+  # 分析数据库
+  analytics:
+    driver: mysql
+    host: localhost
+    port: 3306
+    username: root
+    password: secret
+    database: app_analytics_db
+    charset: utf8mb4
+
+# 迁移器配置
+migrator:
+  migrations_table: schema_migrations    # 迁移记录表名
+  lock_table: schema_migrations_lock     # 锁表名
+  auto_backup: false                     # 是否自动备份
+  dry_run: false                         # 干运行模式
+  default_database: main                 # 默认操作的数据库
+  migrations_dir: migrations             # 迁移文件目录
+  database_patterns:                     # 数据库匹配模式（用于批量操作）
+    - "app_*"                           # 匹配以app_开头的数据库
+    - "shop_*"                          # 匹配以shop_开头的数据库
+
+# 使用说明：
+#
+# 1. 单数据库使用（向后兼容）：
+#    只配置 database 部分即可
+#
+# 2. 多数据库使用：
+#    配置 databases 部分，每个数据库一个配置项
+#
+# 3. 命令行使用示例：
+#    db-migrator up                      # 使用默认数据库
+#    db-migrator up -d main             # 使用指定数据库
+#    db-migrator up --databases=main,users  # 使用多个数据库
+#    db-migrator up --patterns=app_*    # 使用模式匹配
+#    db-migrator up --all               # 使用所有配置的数据库
+#
+# 4. 迁移文件组织方式：
+#    方式1 - 按目录组织：
+#      migrations/
+#        main/001_xxx.go
+#        users/001_xxx.go
+#        
+#    方式2 - 代码指定：
+#      在迁移文件中实现 MultiDatabaseMigration 接口
+#      func (m *Migration) Database() string { return "main" }
+#      func (m *Migration) Databases() []string { return []string{"main", "users"} } 
