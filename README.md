@@ -30,6 +30,14 @@
 - **注释处理** - 正确处理SQL文件中的单行和多行注释
 - **字符集配置** - 支持指定数据库字符集和排序规则
 
+### 🆕 **数据插入功能** (新增)
+- **从SQL文件插入数据** - 解析INSERT语句并向数据库插入数据
+- **表存在性验证** - 插入前自动验证目标表是否存在
+- **事务安全** - 支持事务级别的数据插入，失败时自动回滚
+- **批量处理** - 支持大文件的分批插入，提高性能
+- **冲突处理** - 主键冲突时可选择报错停止或忽略继续
+- **多数据库支持** - 支持同时向多个数据库插入相同数据
+
 ## 🚀 快速开始
 
 ### 安装
@@ -119,6 +127,33 @@ migrator:
 ./db-migrator create-db \
   --name "complex_db" \
   --from-sql "examples/sql_schema/sample_shop.sql"
+```
+
+### **🆕 向数据库插入数据**
+
+支持从SQL文件向已存在的数据库插入数据：
+
+```bash
+# 向单个数据库插入数据
+./db-migrator insert-data \
+  --database "my_shop" \
+  --from-sql "data.sql"
+
+# 向多个数据库插入相同数据
+./db-migrator insert-data \
+  --patterns "shop_*" \
+  --from-sql "base_data.sql"
+
+# 指定批量大小和冲突处理
+./db-migrator insert-data \
+  --database "my_shop" \
+  --from-sql "large_data.sql" \
+  --batch-size 500 \
+  --on-conflict ignore
+
+# 完整工作流：创建数据库 + 插入数据
+./db-migrator create-db --name "demo_shop" --from-sql "schema.sql"
+./db-migrator insert-data --database "demo_shop" --from-sql "data.sql"
 ```
 
 #### SQL文件支持的对象类型
@@ -320,6 +355,33 @@ Examples:
   
   # 如果数据库已存在则跳过
   db-migrator create-db --name "my_shop" --from-sql "schema.sql" --if-exists skip
+```
+
+### insert-data 命令
+
+```bash
+db-migrator insert-data [flags]
+
+Flags:
+  --from-sql string      包含INSERT语句的SQL文件路径 (必填)
+  --batch-size int       批量插入大小 (默认: 1000)
+  --on-conflict string   主键冲突处理: error, ignore (默认: error)
+  --validate-tables      验证表是否存在 (默认: true)
+  --use-transaction      使用事务保证一致性 (默认: true)
+  --stop-on-error        遇到错误时停止执行 (默认: true)
+
+Examples:
+  # 向单个数据库插入数据
+  db-migrator insert-data --database "my_shop" --from-sql "data.sql"
+  
+  # 向多个数据库插入相同数据
+  db-migrator insert-data --patterns "shop_*" --from-sql "base_data.sql"
+  
+  # 指定批量大小和冲突处理
+  db-migrator insert-data --database "my_shop" --from-sql "data.sql" --batch-size 500 --on-conflict ignore
+  
+  # 向所有数据库插入数据
+  db-migrator insert-data --all --from-sql "global_data.sql"
 ```
 
 ### 通用数据库选择参数
