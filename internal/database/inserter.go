@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"db-migrator/internal/sqlparser"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/sqlparser"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // Inserter 数据插入器实现
@@ -203,46 +203,16 @@ func (i *Inserter) ExecuteInsertStatements(ctx context.Context, dbName string, s
 	return nil
 }
 
-// executeInsertStatement 执行单个INSERT语句（事务版本）
+// executeInsertStatement 使用事务执行INSERT语句
 func (i *Inserter) executeInsertStatement(ctx context.Context, tx *sql.Tx, stmt types.InsertStatement, config types.DataInsertConfig) error {
-	// 处理批量插入
-	if config.BatchSize > 0 && len(stmt.Values) > config.BatchSize {
-		return i.executeBatchInsert(ctx, tx, stmt, config)
-	}
-
-	// 直接执行INSERT语句
-	_, err := tx.ExecContext(ctx, stmt.Statement)
-	if err != nil {
-		// 根据冲突策略处理错误
-		if i.isDuplicateKeyError(err) && config.OnConflict == "ignore" {
-			log.Printf("⚠️ 忽略重复键错误: %s", stmt.TableName)
-			return nil
-		}
-		return err
-	}
-
-	return nil
+	// 批量处理
+	return i.executeBatchInsert(ctx, tx, stmt, config)
 }
 
-// executeInsertStatementDB 执行单个INSERT语句（数据库连接版本）
+// executeInsertStatementDB 使用数据库连接执行INSERT语句
 func (i *Inserter) executeInsertStatementDB(ctx context.Context, db *sql.DB, stmt types.InsertStatement, config types.DataInsertConfig) error {
-	// 处理批量插入
-	if config.BatchSize > 0 && len(stmt.Values) > config.BatchSize {
-		return i.executeBatchInsertDB(ctx, db, stmt, config)
-	}
-
-	// 直接执行INSERT语句
-	_, err := db.ExecContext(ctx, stmt.Statement)
-	if err != nil {
-		// 根据冲突策略处理错误
-		if i.isDuplicateKeyError(err) && config.OnConflict == "ignore" {
-			log.Printf("⚠️ 忽略重复键错误: %s", stmt.TableName)
-			return nil
-		}
-		return err
-	}
-
-	return nil
+	// 批量处理
+	return i.executeBatchInsertDB(ctx, db, stmt, config)
 }
 
 // executeBatchInsert 批量执行INSERT（事务版本）

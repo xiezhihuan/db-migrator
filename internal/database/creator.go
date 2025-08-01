@@ -7,8 +7,8 @@ import (
 	"log"
 	"time"
 
-	"db-migrator/internal/sqlparser"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/sqlparser"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // Creator 数据库创建器实现

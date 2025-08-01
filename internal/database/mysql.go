@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 
 	_ "github.com/go-sql-driver/mysql"
 )

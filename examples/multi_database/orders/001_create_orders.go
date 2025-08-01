@@ -2,9 +2,9 @@ package orders
 
 import (
 	"context"
-	"db-migrator/internal/builder"
-	"db-migrator/internal/checker"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/builder"
+	"github.com/xiezhihuan/db-migrator/internal/checker"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // CreateOrdersTableMigration 创建订单表迁移（订单数据库）

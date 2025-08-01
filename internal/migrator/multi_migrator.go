@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"db-migrator/internal/checker"
-	"db-migrator/internal/database"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/checker"
+	"github.com/xiezhihuan/db-migrator/internal/database"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // MultiMigrator 多数据库迁移器

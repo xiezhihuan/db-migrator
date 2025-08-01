@@ -2,9 +2,9 @@ package pattern_example
 
 import (
 	"context"
-	"db-migrator/internal/builder"
-	"db-migrator/internal/checker"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/builder"
+	"github.com/xiezhihuan/db-migrator/internal/checker"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // ShopDatabasesMigration 演示shop*模式匹配的迁移

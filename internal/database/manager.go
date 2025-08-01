@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // Manager 数据库管理器

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 
 	"gopkg.in/yaml.v3"
 )

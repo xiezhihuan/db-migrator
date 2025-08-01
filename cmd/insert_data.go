@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"db-migrator/internal/database"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/database"
+	"github.com/xiezhihuan/db-migrator/internal/sqlparser"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
@@ -40,23 +41,32 @@ var insertDataCmd = &cobra.Command{
 }
 
 var (
-	insertDataSQLFile        string
-	insertDataBatchSize      int
-	insertDataOnConflict     string
-	insertDataValidateTables bool
-	insertDataUseTransaction bool
-	insertDataStopOnError    bool
+	insertTargetDatabase  string
+	insertTargetDatabases []string
+	insertPatterns        []string
+	insertUseAllDatabases bool
+	insertFromSQLFile     string
+	insertBatchSize       int
+	insertUseTransaction  bool
+	insertValidateTables  bool
+	insertStopOnError     bool
+	insertOnConflict      string
+	insertDryRun          bool
+	insertPreview         bool
 )
 
 func init() {
 	rootCmd.AddCommand(insertDataCmd)
 
-	insertDataCmd.Flags().StringVar(&insertDataSQLFile, "from-sql", "", "包含INSERT语句的SQL文件路径 (必填)")
-	insertDataCmd.Flags().IntVar(&insertDataBatchSize, "batch-size", 1000, "批量插入大小")
-	insertDataCmd.Flags().StringVar(&insertDataOnConflict, "on-conflict", "error", "主键冲突处理: error, ignore")
-	insertDataCmd.Flags().BoolVar(&insertDataValidateTables, "validate-tables", true, "验证表是否存在")
-	insertDataCmd.Flags().BoolVar(&insertDataUseTransaction, "use-transaction", true, "使用事务保证一致性")
-	insertDataCmd.Flags().BoolVar(&insertDataStopOnError, "stop-on-error", true, "遇到错误时停止执行")
+	insertDataCmd.Flags().StringVar(&insertOnConflict, "on-conflict", "error", "主键冲突处理: error, ignore")
+	insertDataCmd.Flags().BoolVar(&insertDryRun, "dry-run", false, "仅解析SQL文件，不连接数据库")
+	insertDataCmd.Flags().BoolVar(&insertPreview, "preview", false, "预览解析到的INSERT语句（显示前10条）")
+
+	insertDataCmd.Flags().StringVar(&insertFromSQLFile, "from-sql", "", "包含INSERT语句的SQL文件路径 (必填)")
+	insertDataCmd.Flags().IntVar(&insertBatchSize, "batch-size", 1000, "批量插入大小")
+	insertDataCmd.Flags().BoolVar(&insertValidateTables, "validate-tables", true, "验证表是否存在")
+	insertDataCmd.Flags().BoolVar(&insertUseTransaction, "use-transaction", true, "使用事务保证一致性")
+	insertDataCmd.Flags().BoolVar(&insertStopOnError, "stop-on-error", true, "遇到错误时停止执行")
 
 	insertDataCmd.MarkFlagRequired("from-sql")
 
@@ -66,20 +76,20 @@ func init() {
 
 func runInsertData(cmd *cobra.Command, args []string) error {
 	// 验证参数
-	if insertDataSQLFile == "" {
+	if insertFromSQLFile == "" {
 		return fmt.Errorf("必须指定SQL文件路径 (--from-sql)")
 	}
 
 	// 验证SQL文件是否存在
-	if _, err := os.Stat(insertDataSQLFile); os.IsNotExist(err) {
-		return fmt.Errorf("SQL文件不存在: %s", insertDataSQLFile)
+	if _, err := os.Stat(insertFromSQLFile); os.IsNotExist(err) {
+		return fmt.Errorf("SQL文件不存在: %s", insertFromSQLFile)
 	}
 
 	// 验证on-conflict参数
 	validConflictStrategies := []string{"error", "ignore"}
-	if !contains(validConflictStrategies, insertDataOnConflict) {
+	if !contains(validConflictStrategies, insertOnConflict) {
 		return fmt.Errorf("无效的on-conflict值: %s，支持的值: %s",
-			insertDataOnConflict, strings.Join(validConflictStrategies, ", "))
+			insertOnConflict, strings.Join(validConflictStrategies, ", "))
 	}
 
 	// 验证数据库参数
@@ -88,7 +98,7 @@ func runInsertData(cmd *cobra.Command, args []string) error {
 	}
 
 	// 获取绝对路径
-	absPath, err := filepath.Abs(insertDataSQLFile)
+	absPath, err := filepath.Abs(insertFromSQLFile)
 	if err != nil {
 		return fmt.Errorf("获取SQL文件绝对路径失败: %v", err)
 	}
@@ -111,11 +121,16 @@ func runInsertData(cmd *cobra.Command, args []string) error {
 	log.Printf("开始执行数据插入...")
 	log.Printf("  SQL文件: %s", absPath)
 	log.Printf("  目标数据库 (%d个): %s", len(databases), strings.Join(databases, ", "))
-	log.Printf("  批量大小: %d", insertDataBatchSize)
-	log.Printf("  冲突策略: %s", insertDataOnConflict)
-	log.Printf("  验证表: %v", insertDataValidateTables)
-	log.Printf("  使用事务: %v", insertDataUseTransaction)
-	log.Printf("  遇错停止: %v", insertDataStopOnError)
+	log.Printf("  批量大小: %d", insertBatchSize)
+	log.Printf("  冲突策略: %s", insertOnConflict)
+	log.Printf("  验证表: %v", insertValidateTables)
+	log.Printf("  使用事务: %v", insertUseTransaction)
+	log.Printf("  遇错停止: %v", insertStopOnError)
+
+	// 在dry-run模式下，只解析SQL文件
+	if insertDryRun || insertPreview {
+		return runInsertDataDryRun()
+	}
 
 	// 创建根连接（不指定数据库）
 	rootConn, err := createRootConnection(&config.Database)
@@ -129,11 +144,11 @@ func runInsertData(cmd *cobra.Command, args []string) error {
 
 	// 准备插入配置
 	insertConfig := types.DataInsertConfig{
-		BatchSize:        insertDataBatchSize,
-		OnConflict:       insertDataOnConflict,
-		StopOnError:      insertDataStopOnError,
-		ValidateTables:   insertDataValidateTables,
-		UseTransaction:   insertDataUseTransaction,
+		BatchSize:        insertBatchSize,
+		OnConflict:       insertOnConflict,
+		StopOnError:      insertStopOnError,
+		ValidateTables:   insertValidateTables,
+		UseTransaction:   insertUseTransaction,
 		ProgressCallback: createProgressCallback(),
 	}
 
@@ -159,6 +174,56 @@ func runInsertData(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("多数据库插入失败: %v", err)
 		}
 		printMultiInsertResult(multiResult)
+	}
+
+	return nil
+}
+
+func runInsertDataDryRun() error {
+	fmt.Printf("🔍 解析SQL文件：%s\n", insertFromSQLFile)
+
+	parser := sqlparser.NewInsertParser()
+	insertStatements, err := parser.ParseInsertFile(insertFromSQLFile)
+	if err != nil {
+		return fmt.Errorf("解析SQL文件失败: %v", err)
+	}
+
+	fmt.Printf("✅ 成功解析 %d 条INSERT语句\n\n", len(insertStatements))
+
+	// 显示识别到的变量
+	variables := parser.GetVariables()
+	if len(variables) > 0 {
+		fmt.Println("🔧 **识别到的MySQL变量：**")
+		for varName, value := range variables {
+			fmt.Printf("  - @%s = %v\n", varName, value)
+		}
+		fmt.Println()
+	}
+
+	// 显示解析统计
+	tableStats := make(map[string]int)
+	for _, stmt := range insertStatements {
+		tableStats[stmt.TableName]++
+	}
+
+	fmt.Println("📊 **表统计信息：**")
+	for table, count := range tableStats {
+		fmt.Printf("  - %s: %d 条记录\n", table, count)
+	}
+
+	if insertPreview && len(insertStatements) > 0 {
+		fmt.Println("\n📝 **预览INSERT语句（前10条）：**")
+		for i, stmt := range insertStatements {
+			if i >= 10 {
+				fmt.Printf("  ... 还有 %d 条语句\n", len(insertStatements)-10)
+				break
+			}
+			preview := stmt.Statement
+			if len(preview) > 100 {
+				preview = preview[:100] + "..."
+			}
+			fmt.Printf("  %d. %s\n", i+1, preview)
+		}
 	}
 
 	return nil

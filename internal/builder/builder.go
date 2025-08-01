@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // SQLBuilder SQL构建器

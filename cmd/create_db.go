@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"db-migrator/internal/database"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/database"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 
 	"github.com/spf13/cobra"
 )

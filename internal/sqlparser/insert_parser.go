@@ -7,19 +7,22 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // InsertParser INSERT语句解析器实现
 type InsertParser struct {
 	delimiter string
+	variables map[string]interface{} // 存储MySQL变量
 }
 
 // NewInsertParser 创建新的INSERT解析器
 func NewInsertParser() *InsertParser {
 	return &InsertParser{
 		delimiter: ";",
+		variables: make(map[string]interface{}),
 	}
 }
 
@@ -65,6 +68,13 @@ func (p *InsertParser) ParseInsertFile(filePath string) ([]types.InsertStatement
 			statementText = strings.TrimSpace(statementText)
 
 			if statementText != "" {
+				// 尝试解析SET变量语句
+				if p.parseSetStatement(statementText) {
+					currentStatement.Reset()
+					continue
+				}
+
+				// 解析INSERT语句
 				stmt, err := p.parseInsertStatement(statementText, lineNumber)
 				if err != nil {
 					return nil, fmt.Errorf("第%d行解析错误: %v", lineNumber, err)
@@ -353,6 +363,15 @@ func (p *InsertParser) parseValue(valueStr string) (interface{}, error) {
 		return nil, nil
 	}
 
+	// 处理MySQL变量 @variableName
+	if strings.HasPrefix(valueStr, "@") {
+		varName := strings.ToLower(valueStr[1:])
+		if value, exists := p.variables[varName]; exists {
+			return value, nil
+		}
+		return nil, fmt.Errorf("未定义的变量: %s", valueStr)
+	}
+
 	// 字符串值（带引号）
 	if (strings.HasPrefix(valueStr, "'") && strings.HasSuffix(valueStr, "'")) ||
 		(strings.HasPrefix(valueStr, "\"") && strings.HasSuffix(valueStr, "\"")) {
@@ -378,6 +397,67 @@ func (p *InsertParser) parseValue(valueStr string) (interface{}, error) {
 
 	// 其他情况作为字符串处理
 	return valueStr, nil
+}
+
+// parseSetStatement 解析SET变量语句
+func (p *InsertParser) parseSetStatement(statement string) bool {
+	statement = strings.TrimSpace(statement)
+
+	// 匹配 SET @variable = value 格式
+	setRegex := regexp.MustCompile(`(?i)^SET\s+@(\w+)\s*=\s*(.+)$`)
+	matches := setRegex.FindStringSubmatch(statement)
+
+	if len(matches) == 3 {
+		varName := strings.ToLower(matches[1])
+		valueExpr := strings.TrimSpace(matches[2])
+
+		// 计算表达式值
+		value := p.evaluateExpression(valueExpr)
+		p.variables[varName] = value
+
+		return true
+	}
+
+	return false
+}
+
+// evaluateExpression 计算表达式值
+func (p *InsertParser) evaluateExpression(expr string) interface{} {
+	expr = strings.TrimSpace(expr)
+	upperExpr := strings.ToUpper(expr)
+
+	// 处理 UNIX_TIMESTAMP(NOW()) 函数
+	if upperExpr == "UNIX_TIMESTAMP(NOW())" {
+		return time.Now().Unix()
+	}
+
+	// 处理 NOW() 函数
+	if upperExpr == "NOW()" {
+		return time.Now().Format("2006-01-02 15:04:05")
+	}
+
+	// 处理数字
+	if num, err := strconv.ParseInt(expr, 10, 64); err == nil {
+		return num
+	}
+
+	if num, err := strconv.ParseFloat(expr, 64); err == nil {
+		return num
+	}
+
+	// 处理字符串（去掉引号）
+	if (strings.HasPrefix(expr, "'") && strings.HasSuffix(expr, "'")) ||
+		(strings.HasPrefix(expr, "\"") && strings.HasSuffix(expr, "\"")) {
+		return expr[1 : len(expr)-1]
+	}
+
+	// 默认返回字符串
+	return expr
+}
+
+// GetVariables 获取解析到的变量
+func (p *InsertParser) GetVariables() map[string]interface{} {
+	return p.variables
 }
 
 // ValidateInsertStatements 验证INSERT语句

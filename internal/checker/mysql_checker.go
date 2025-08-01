@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // MySQLChecker MySQL存在性检查器

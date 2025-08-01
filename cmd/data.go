@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"db-migrator/internal/database"
-	"db-migrator/internal/datacopy"
+	"github.com/xiezhihuan/db-migrator/internal/database"
+	"github.com/xiezhihuan/db-migrator/internal/datacopy"
 )
 
 var (

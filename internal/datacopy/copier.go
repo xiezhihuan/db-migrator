@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // CopyStrategy 数据复制策略

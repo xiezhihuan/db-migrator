@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // AdvancedBuilder 高级构建器，提供更多封装方法

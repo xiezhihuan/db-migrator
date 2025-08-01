@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // Parser SQL解析器实现

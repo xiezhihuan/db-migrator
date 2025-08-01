@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"db-migrator/internal/checker"
-	"db-migrator/internal/database"
-	"db-migrator/internal/migrator"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/checker"
+	"github.com/xiezhihuan/db-migrator/internal/database"
+	"github.com/xiezhihuan/db-migrator/internal/migrator"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 var (
@@ -436,8 +436,8 @@ func createMigrationFile(name string) error {
 
 import (
 	"context"
-	"db-migrator/internal/builder"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/builder"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // %sMigration %s迁移

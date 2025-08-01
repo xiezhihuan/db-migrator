@@ -1,4 +1,4 @@
-module db-migrator
+module github.com/xiezhihuan/db-migrator
 
 go 1.21.0
 
@@ -8,6 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -25,5 +26,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// 如果需要引用 github.com/xiezhihuan/db-migrator，可以添加以下 replace 指令：
+// replace github.com/xiezhihuan/db-migrator => github.com/xiezhihuan/db-migrator v0.0.0-20250723182801-3112815e8596

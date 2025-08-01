@@ -1,6 +1,6 @@
 package main
 
-import "db-migrator/cmd"
+import "github.com/xiezhihuan/db-migrator/cmd"
 
 func main() {
 	cmd.Execute()

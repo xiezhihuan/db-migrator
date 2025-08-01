@@ -2,9 +2,9 @@ package shared
 
 import (
 	"context"
-	"db-migrator/internal/builder"
-	"db-migrator/internal/checker"
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/builder"
+	"github.com/xiezhihuan/db-migrator/internal/checker"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // CreateSettingsTableMigration 创建设置表迁移（多数据库共享）

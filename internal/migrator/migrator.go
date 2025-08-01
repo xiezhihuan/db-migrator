@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"db-migrator/internal/types"
+	"github.com/xiezhihuan/db-migrator/internal/types"
 )
 
 // Migrator 迁移器
